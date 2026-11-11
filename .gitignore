@@ -1,0 +1,4 @@
+__pycache__/
+results/
+collected/
+all_results.csv
