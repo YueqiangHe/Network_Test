@@ -47,6 +47,23 @@ class SamplingTests(unittest.TestCase):
         self.assertEqual(result['status'], 'command_error')
         self.assertIsNone(result['loss_percent'])
 
+    def test_mac_no_reply_exit_two(self):
+        result = self.sample('mac', '1 packets transmitted, 0 packets received, 100.0% packet loss', 2)
+        self.assertEqual(result['status'], 'no_echo_reply')
+        self.assertEqual(result['attempted'], 1)
+        self.assertEqual(result['loss_percent'], 100)
+
+    def test_mac_error_exit_one(self):
+        result = self.sample('mac', 'ping: invalid option -- x', 1)
+        self.assertEqual(result['status'], 'command_error')
+        self.assertEqual(result['attempted'], 0)
+        self.assertIsNone(result['loss_percent'])
+
+    def test_linux_no_reply_exit_one(self):
+        result = self.sample('linux', '1 packets transmitted, 0 received, 100% packet loss', 1)
+        self.assertEqual(result['status'], 'no_echo_reply')
+        self.assertEqual(result['loss_percent'], 100)
+
     def test_dns_failure_not_packet_loss(self):
         with tempfile.TemporaryDirectory() as directory:
             with patch.object(nt.socket, 'getaddrinfo', side_effect=nt.socket.gaierror('not found')):

@@ -143,6 +143,8 @@ python3 network_test.py --target 127.0.0.1 --count 3
 
 ## 统计含义与故障
 
+- macOS的ping无回复时退出码为2，Linux通常为1；脚本分别处理。旧版脚本可能把macOS无回复误报为`command_error`和`0/0`，请使用更新后的`network_test.py`重新测试。
+- 遇到`command_error`时查看终端错误详情和对应`*.log`，不能据此直接判定服务器被阻断。例如自定义目标的原始日志为`results/本次时间戳/T1.log`。
 - `completed`：完整执行了采样，收到至少一个echo回复，不是代理测试通过。
 - `no_echo_reply`：执行了采样，但没有收到echo回复。
 - `dns_error`：域名解析失败；丢包率为空，不记为100%丢包。

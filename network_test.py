@@ -127,8 +127,10 @@ def sample_target(label, host, args, system, folder):
         else:
             command = ['ping', '-n', '-c', '1', '-W', str(args.timeout * 1000), ip]
         code, output = run(command, timeout=args.timeout + 5)
-        log.append(f'--- sample {index + 1}: exit={code} ---\n{output}')
-        if code not in (0, 1) or re.search(r'operation not permitted|permission denied|not recognized|无权|不是内部', output, re.I):
+        log.append(f'--- sample {index + 1}: exit={code} ---\ncommand: {command!r}\n{output}')
+        # Apple's ping uses 2 for no echo replies; Linux uses 1 instead.
+        normal_codes = (0, 2) if system == 'mac' else (0, 1)
+        if code not in normal_codes or re.search(r'operation not permitted|permission denied|not recognized|无权|不是内部', output, re.I):
             result.update(status='command_error', error=output.strip() or f'ping exit code {code}')
             break
         result['attempted'] += 1
@@ -203,9 +205,13 @@ def main():
                      'connection_detected': metadata['network']['connection_type'],
                      'connection_manual': args.connection or '', 'started_utc': metadata['started_utc'],
                      'system': metadata['system'], **result})
+        loss = f'{result["loss_percent"]}%' if result['loss_percent'] is not None else '未统计'
+        latency = f'{result["avg_ms"]} ms' if result['avg_ms'] is not None else '无数据'
         print(f'{result["target"]} {result["ipv4"] or result["host"]}: '
               f'{result["status"]}, 收到 {result["received"]}/{result["attempted"]}, '
-              f'丢包 {result["loss_percent"]}%, 平均 {result["avg_ms"]} ms')
+              f'丢包 {loss}, 平均 {latency}')
+        if result.get('error'):
+            print(f'  错误详情：{result["error"]}\n  原始日志：{folder / (result["target"] + ".log")}')
     fields = list(dict.fromkeys(key for row in rows for key in row))
     with (folder / 'summary.csv').open('w', encoding='utf-8-sig', newline='') as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
